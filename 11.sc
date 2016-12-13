@@ -4,9 +4,12 @@ case object Thulium extends Isotope
 case object Promethium extends Isotope
 case object Ruthenium extends Isotope
 case object Cobalt extends Isotope
+case object Elerium extends Isotope
+case object Dilithium extends Isotope
 
 case class Floor(generators: Set[Isotope] = Set.empty, chips: Set[Isotope] = Set.empty) {
-  lazy val isValid = generators.isEmpty || chips.forall(generators.contains(_))
+  // lazy val isValid = generators.isEmpty || chips.forall(generators.contains(_))
+  lazy val isValid = chips.isEmpty || generators.forall(chips.contains(_))
   lazy val isEmpty = generators.isEmpty && chips.isEmpty
 }
 
@@ -20,8 +23,8 @@ case class Situation(
 
 val initialSituation = Situation(0, List(
   Floor(
-    generators = Set(Polonium, Thulium, Promethium, Ruthenium, Cobalt),
-    chips = Set(Thulium, Ruthenium, Cobalt)
+    generators = Set(Polonium, Thulium, Promethium, Ruthenium, Cobalt, Elerium, Dilithium),
+    chips = Set(Thulium, Ruthenium, Cobalt, Elerium, Dilithium)
   ),
   Floor(
     chips = Set(Polonium, Promethium)
@@ -61,16 +64,22 @@ def allMoves(situation: Situation): Set[Move] = {
           .subsets
           .map(selectedChips => (selectedGenerators, selectedChips)))
       .filter(t => t._1.size + t._2.size > 0)
-      .filter(t => t._1.size + t._2.size <= 4)
+      .filter(t => t._1.size + t._2.size <= 2)
       .toSet
   }
   possiblePayloads.map { case (x, y) => Move(-1, x, y) } ++
   possiblePayloads.map { case (x, y) => Move(1, x, y) }
 }
 
-allMoves(initialSituation)
-  .map(_.applyTo(initialSituation))
+def allNextStates(situation: Situation): Set[Situation] = allMoves(situation).map(_.applyTo(situation))
+
+allNextStates(initialSituation)
   .filter(_.isValid)
 
-@annotations.tailrec
-def numberOfMovesNeeded(seen: Set[Situation], now: Set[Situation], currentDepth: Int)
+@annotation.tailrec
+def numberOfMovesNeeded(seen: Set[Situation], now: Set[Situation], currentDepth: Int): Int = {
+  if (now.exists(_.isDone)) currentDepth
+  else numberOfMovesNeeded(seen ++ now, now.flatMap(sit => allNextStates(sit)).filter(_.isValid).toSet, currentDepth + 1)
+}
+
+numberOfMovesNeeded(Set.empty, Set(initialSituation), 0)
