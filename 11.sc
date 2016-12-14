@@ -79,7 +79,7 @@ allNextStates(initialSituation)
 @annotation.tailrec
 def numberOfMovesNeeded(seen: Set[Situation], now: Set[Situation], currentDepth: Int): Int = {
   if (now.exists(_.isDone)) currentDepth
-  else numberOfMovesNeeded(seen ++ now, now.flatMap(sit => allNextStates(sit)).filter(_.isValid).toSet, currentDepth + 1)
+  else numberOfMovesNeeded(seen ++ now, now.flatMap(sit => allNextStates(sit)).filter(_.isValid) -- seen, currentDepth + 1)
 }
 
 numberOfMovesNeeded(Set.empty, Set(initialSituation), 0)
